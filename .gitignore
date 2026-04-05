@@ -1,0 +1,83 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# --- 추가 권장 설정 ---
+
+# 1. 환경 변수 및 비밀 키 (가장 중요!)
+# API 키나 서버 주소를 담은 파일은 절대 올라가면 안 됩니다.
+.env
+*.env.local
+secrets.yaml
+keys.props
+
+# 2. VS Code 관련 추가
+# .vscode 폴더 전체를 제외하거나, 최소한 개인 설정은 제외하는 것이 좋습니다.
+.vscode/settings.json
+.vscode/bin/
+*.code-workspace
+
+# 3. MacOS 관련 (맥에서 개발하신다면 필수)
+# .DS_Store 외에도 시스템이 생성하는 쓰레기 파일들입니다.
+.AppleDB
+.AppleDesktop
+.AppleDouble
+.LSOverride
+Network Trash Folder
+Temporary Items
+.Trashes
+
+# 4. CocoaPods 관련 (iOS 빌드 시 발생)
+# 프로젝트 실행에는 문제 없으나 깃 기록을 지저분하게 만듭니다.
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/Config/
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+
+# 5. 안드로이드 로컬 설정
+# 개인 컴퓨터의 SDK 경로 등이 담겨있어 팀원과 충돌이 자주 납니다.
+/android/local.properties
+/android/key.properties
