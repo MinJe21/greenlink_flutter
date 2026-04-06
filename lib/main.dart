@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:greenlink_front/screen/auth/loginPage.dart';
+import 'package:greenlink_front/screen/auth/signup_page.dart';
 import 'package:greenlink_front/screen/home/home_page.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  KakaoSdk.init(
+    nativeAppKey: const String.fromEnvironment(
+      'KAKAO_NATIVE_APP_KEY',
+      defaultValue: 'YOUR_KAKAO_NATIVE_APP_KEY',
+    ),
+  );
   runApp(const GreenLinkApp());
 }
 
@@ -23,6 +32,7 @@ class GreenLinkApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),
+        '/signup': (context) => const SignUpPage(),
       },
     );
   }
