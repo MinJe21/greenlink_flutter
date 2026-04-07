@@ -52,35 +52,18 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      Expanded(
-                        child: _buildSocialButton(
-                          label: "카카오",
-                          bg: const Color(0xFFFEE500),
-                          fg: Colors.black87,
-                          leading: Image.asset(
-                            'assets/images/kakao.webp',
-                            width: 20,
-                            height: 20,
-                            fit: BoxFit.contain,
-                          ),
-                          onTap: _isSubmitting ? null : _handleKakaoLogin,
-                        ),
+                      _circleLogoButton(
+                        asset: 'assets/images/kakao.png',
+                        onTap: _isSubmitting ? null : _handleKakaoLogin,
+                        size: 52,
+                        tooltip: '카카오 로그인',
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _buildSocialButton(
-                          label: "구글",
-                          bg: Colors.white,
-                          fg: Colors.black87,
-                          leading: Image.asset(
-                            'assets/images/google.jpeg',
-                            width: 20,
-                            height: 20,
-                            fit: BoxFit.contain,
-                          ),
-                          onTap: _isSubmitting ? null : _handleGoogleLogin,
-                          border: true,
-                        ),
+                      const SizedBox(width: 14),
+                      _circleLogoButton(
+                        asset: 'assets/images/Google.avif',
+                        onTap: _isSubmitting ? null : _handleGoogleLogin,
+                        size: 52,
+                        tooltip: '구글 로그인',
                       ),
                     ],
                   ),
@@ -264,39 +247,38 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildSocialButton({
-    required String label,
-    required Color bg,
-    required Color fg,
+  Widget _circleLogoButton({
+    required String asset,
+    required double size,
+    required String tooltip,
     VoidCallback? onTap,
-    bool border = false,
-    Widget? leading,
   }) {
+    const double scale = 0.7; // 로고를 버튼 대비 70% 크기로
+    final innerSize = size * scale;
     return SizedBox(
-      height: 48,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: border ? const BorderSide(color: Colors.black12) : BorderSide.none,
-          ),
-        ),
+      width: size,
+      height: size,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        tooltip: tooltip,
         onPressed: onTap,
-        child: _isSubmitting
+        icon: _isSubmitting
             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (leading != null) ...[
-                    leading,
-                    const SizedBox(width: 8),
-                  ],
-                  Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-                ],
+            : ClipOval(
+                child: Image.asset(
+                  asset,
+                  width: innerSize,
+                  height: innerSize,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: Colors.white12,
+                    alignment: Alignment.center,
+                    child: Text(
+                      asset.split('/').last,
+                      style: const TextStyle(color: Colors.white54, fontSize: 10),
+                    ),
+                  ),
+                ),
               ),
       ),
     );

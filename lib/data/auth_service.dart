@@ -1,4 +1,5 @@
 import 'package:greenlink_front/core/api_client.dart';
+import 'package:greenlink_front/data/auth_session.dart';
 
 /// 로그인/회원가입 API 전용 서비스 (Spring Boot 연동)
 class AuthService {
@@ -43,6 +44,10 @@ class AuthService {
       throw ApiException(statusCode: accessResp.statusCode, message: 'AccessToken 발급 실패');
     }
 
+    // 인메모리 세션에 저장
+    AuthSession.refreshToken = refreshToken;
+    AuthSession.accessToken = accessToken;
+
     return (refreshToken: refreshToken, accessToken: accessToken);
   }
 
@@ -84,5 +89,21 @@ class AuthService {
       }
     }
     return null;
+  }
+
+  /// 사용자 닉네임 조회: GET /api/user
+  Future<String?> fetchNickname() async {
+    final token = AuthSession.accessToken;
+    if (token == null) {
+      throw ApiException(statusCode: 401, message: '로그인 토큰이 없습니다.');
+    }
+
+    final json = await _client.get(
+      '/api/user',
+      headers: {
+        'Authorization': token,
+      },
+    );
+    return json['nickname']?.toString();
   }
 }

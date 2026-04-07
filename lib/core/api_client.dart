@@ -15,6 +15,37 @@ class ApiClient {
     return Uri.parse('$_baseUrl$path');
   }
 
+  /// GET 요청 헬퍼
+  Future<http.Response> getRaw(
+    String path, {
+    Map<String, String>? headers,
+  }) {
+    return _client.get(
+      _buildUri(path),
+      headers: {
+        'Content-Type': 'application/json',
+        ...?headers,
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, String>? headers,
+  }) async {
+    final response = await getRaw(path, headers: headers);
+    final decoded = response.body.isNotEmpty
+        ? jsonDecode(response.body) as Map<String, dynamic>
+        : <String, dynamic>{};
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return decoded;
+    }
+    throw ApiException(
+      statusCode: response.statusCode,
+      message: decoded['message']?.toString() ?? 'Unexpected error',
+    );
+  }
+
   /// POST 요청 헬퍼 (JSON) - body/headers 단순 전달
   Future<http.Response> postRaw(
     String path, {

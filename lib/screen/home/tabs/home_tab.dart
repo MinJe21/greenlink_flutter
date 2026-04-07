@@ -1,8 +1,49 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:greenlink_front/data/auth_service.dart';
+import 'package:greenlink_front/data/resource_service.dart';
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  late Future<String?> _nicknameFuture;
+  late Future<_PlantCardData?> _plantFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _nicknameFuture = _loadNickname();
+    _plantFuture = _loadMyPlant();
+  }
+
+  Future<String?> _loadNickname() async {
+    final service = AuthService();
+    try {
+      return await service.fetchNickname();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<_PlantCardData?> _loadMyPlant() async {
+    try {
+      final res = await ResourceService().fetchUserPlants();
+      if (res.isEmpty) return null;
+      final first = res.first;
+      return _PlantCardData(
+        title: first['nickname']?.toString() ?? first['plantName']?.toString() ?? '내 식물',
+        subtitle: first['plantName']?.toString(),
+        imageUrl: first['lastPhotoUrl']?.toString(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,10 +54,31 @@ class HomeTab extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 22),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text("닉네임?", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
-              _TogglePills(),
+            children: [
+              // 프로필 영역
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white24,
+                child: const Icon(Icons.person, color: Colors.white70, size: 20),
+              ),
+              const SizedBox(width: 10),
+              FutureBuilder<String?>(
+                future: _nicknameFuture,
+                builder: (context, snapshot) {
+                  final name = snapshot.data;
+                  return Text(
+                    name ?? "닉네임?",
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                  );
+                },
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white70),
+                onPressed: () {
+                  // TODO: 설정 페이지 연결 시 갱신
+                },
+              ),
             ],
           ),
         ),
@@ -25,14 +87,34 @@ class HomeTab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 22),
           child: Column(
             children: [
-              _GlassButton(text: "식물설명"),
-              const SizedBox(height: 10),
               Row(
-                children: const [
-                  Expanded(child: _PillButton(text: "빛", color: Color(0xFFE4F3A3))),
-                  SizedBox(width: 10),
-                  Expanded(child: _PillButton(text: "물", color: Color(0xFFB6D7FF))),
+                children: [
+                  Expanded(
+                    child: FutureBuilder<_PlantCardData?>(
+                      future: _plantFuture,
+                      builder: (context, snapshot) {
+                        final plant = snapshot.data;
+                        return Text(
+                          plant?.title ?? "내 식물",
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Row(
+                    children: const [
+                      _PillButton(text: "빛", color: Color(0xFFE4F3A3)),
+                      SizedBox(width: 8),
+                      _PillButton(text: "물", color: Color(0xFFB6D7FF)),
+                    ],
+                  ),
                 ],
+              ),
+              const SizedBox(height: 10),
+              _GlassButton(
+                text: "식물설명",
+                onTap: _showPlantInfo,
               ),
             ],
           ),
@@ -40,28 +122,42 @@ class HomeTab extends StatelessWidget {
         const SizedBox(height: 18),
         Expanded(
           child: Center(
-            child: Container(
-              width: 240,
-              height: 320,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFE4F3A3).withOpacity(0.35),
-                    blurRadius: 45,
-                    spreadRadius: -10,
-                    offset: const Offset(0, 24),
+            child: FutureBuilder<_PlantCardData?>(
+              future: _plantFuture,
+              builder: (context, snapshot) {
+                final plant = snapshot.data;
+                return Container(
+                  width: 240,
+                  height: 320,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE4F3A3).withOpacity(0.35),
+                        blurRadius: 45,
+                        spreadRadius: -10,
+                        offset: const Offset(0, 24),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.asset(
-                  'assets/images/home_main.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _missingImagePlaceholder("home_main.png"),
-                ),
-              ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: plant != null && plant.imageUrl != null && plant.imageUrl!.isNotEmpty
+                        ? Image.network(
+                            plant.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                _missingImagePlaceholder("plant image", size: const Size(240, 320)),
+                          )
+                        : Image.asset(
+                            'assets/images/plant.jpeg',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) =>
+                                _missingImagePlaceholder("plant.jpeg", size: const Size(240, 320)),
+                          ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -132,8 +228,9 @@ class _PillButton extends StatelessWidget {
 }
 
 class _GlassButton extends StatelessWidget {
-  const _GlassButton({required this.text});
+  const _GlassButton({required this.text, this.onTap});
   final String text;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -146,10 +243,16 @@ class _GlassButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: Colors.white.withOpacity(0.12)),
           ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                ),
+              ),
             ),
           ),
         ),
@@ -158,11 +261,76 @@ class _GlassButton extends StatelessWidget {
   }
 }
 
-Widget _missingImagePlaceholder(String name) {
+Widget _missingImagePlaceholder(String name, {Size? size}) {
   return Container(
+    width: size?.width,
+    height: size?.height,
     color: Colors.black12,
     child: Center(
       child: Text("$name 추가 필요", style: const TextStyle(color: Colors.white54)),
     ),
   );
+}
+
+class _PlantCardData {
+  _PlantCardData({required this.title, this.subtitle, this.imageUrl});
+  final String title;
+  final String? subtitle;
+  final String? imageUrl;
+}
+
+extension on _HomeTabState {
+  Future<void> _showPlantInfo() async {
+    final plant = await _plantFuture;
+    if (!mounted) return;
+    if (plant == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('내 식물 정보가 없습니다.')));
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black.withOpacity(0.9),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(plant.title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            if (plant.subtitle != null) ...[
+              const SizedBox(height: 6),
+              Text(plant.subtitle!, style: const TextStyle(color: Colors.white70)),
+            ],
+            const SizedBox(height: 12),
+            if (plant.imageUrl != null && plant.imageUrl!.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  plant.imageUrl!,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            if (plant.imageUrl == null || plant.imageUrl!.isEmpty)
+              const Text("이미지 없음", style: TextStyle(color: Colors.white54)),
+          ],
+        ),
+      ),
+    );
+  }
 }
