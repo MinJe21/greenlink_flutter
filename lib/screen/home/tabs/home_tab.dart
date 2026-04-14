@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import 'package:greenlink_front/data/auth_service.dart';
 import 'package:greenlink_front/data/resource_service.dart';
 
 class HomeTab extends StatefulWidget {
@@ -11,23 +10,12 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  late Future<String?> _nicknameFuture;
   late Future<_PlantCardData?> _plantFuture;
 
   @override
   void initState() {
     super.initState();
-    _nicknameFuture = _loadNickname();
     _plantFuture = _loadMyPlant();
-  }
-
-  Future<String?> _loadNickname() async {
-    final service = AuthService();
-    try {
-      return await service.fetchNickname();
-    } catch (_) {
-      return null;
-    }
   }
 
   Future<_PlantCardData?> _loadMyPlant() async {
@@ -47,42 +35,12 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1A1A1A);
     return Column(
       key: const ValueKey('home_tab'),
       children: [
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22),
-          child: Row(
-            children: [
-              // 프로필 영역
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white24,
-                child: const Icon(Icons.person, color: Colors.white70, size: 20),
-              ),
-              const SizedBox(width: 10),
-              FutureBuilder<String?>(
-                future: _nicknameFuture,
-                builder: (context, snapshot) {
-                  final name = snapshot.data;
-                  return Text(
-                    name ?? "닉네임?",
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
-                  );
-                },
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.settings, color: Colors.white70),
-                onPressed: () {
-                  // TODO: 설정 페이지 연결 시 갱신
-                },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 22),
           child: Column(
@@ -96,7 +54,7 @@ class _HomeTabState extends State<HomeTab> {
                         final plant = snapshot.data;
                         return Text(
                           plant?.title ?? "내 식물",
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                          style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w700),
                         );
                       },
                     ),
@@ -115,6 +73,7 @@ class _HomeTabState extends State<HomeTab> {
               _GlassButton(
                 text: "식물설명",
                 onTap: _showPlantInfo,
+                isDarkMode: isDark,
               ),
             ],
           ),
@@ -147,13 +106,13 @@ class _HomeTabState extends State<HomeTab> {
                             plant.imageUrl!,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) =>
-                                _missingImagePlaceholder("plant image", size: const Size(240, 320)),
+                                _missingImagePlaceholder(context, "plant image", size: const Size(240, 320)),
                           )
                         : Image.asset(
                             'assets/images/plant.jpeg',
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) =>
-                                _missingImagePlaceholder("plant.jpeg", size: const Size(240, 320)),
+                                _missingImagePlaceholder(context, "plant.jpeg", size: const Size(240, 320)),
                           ),
                   ),
                 );
@@ -228,9 +187,10 @@ class _PillButton extends StatelessWidget {
 }
 
 class _GlassButton extends StatelessWidget {
-  const _GlassButton({required this.text, this.onTap});
+  const _GlassButton({required this.text, this.onTap, required this.isDarkMode});
   final String text;
   final VoidCallback? onTap;
+  final bool isDarkMode;
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -239,9 +199,9 @@ class _GlassButton extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
+            color: isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
+            border: Border.all(color: isDarkMode ? Colors.white.withOpacity(0.12) : Colors.black12),
           ),
           child: Material(
             color: Colors.transparent,
@@ -250,7 +210,13 @@ class _GlassButton extends StatelessWidget {
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white : const Color(0xFF1A1A1A),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -261,13 +227,17 @@ class _GlassButton extends StatelessWidget {
   }
 }
 
-Widget _missingImagePlaceholder(String name, {Size? size}) {
+Widget _missingImagePlaceholder(BuildContext context, String name, {Size? size}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   return Container(
     width: size?.width,
     height: size?.height,
-    color: Colors.black12,
+    color: isDark ? Colors.white10 : Colors.black12,
     child: Center(
-      child: Text("$name 추가 필요", style: const TextStyle(color: Colors.white54)),
+      child: Text(
+        "$name 추가 필요",
+        style: TextStyle(color: isDark ? Colors.white54 : Colors.black45),
+      ),
     ),
   );
 }
@@ -288,9 +258,13 @@ extension on _HomeTabState {
       return;
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mainText = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final subText = isDark ? Colors.white70 : Colors.black54;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black.withOpacity(0.9),
+      backgroundColor: isDark ? Colors.black.withOpacity(0.9) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
@@ -303,16 +277,16 @@ extension on _HomeTabState {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(plant.title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(plant.title, style: TextStyle(color: mainText, fontSize: 18, fontWeight: FontWeight.w800)),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white70),
+                  icon: Icon(Icons.close, color: subText),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
             if (plant.subtitle != null) ...[
               const SizedBox(height: 6),
-              Text(plant.subtitle!, style: const TextStyle(color: Colors.white70)),
+              Text(plant.subtitle!, style: TextStyle(color: subText)),
             ],
             const SizedBox(height: 12),
             if (plant.imageUrl != null && plant.imageUrl!.isNotEmpty)
@@ -327,7 +301,7 @@ extension on _HomeTabState {
                 ),
               ),
             if (plant.imageUrl == null || plant.imageUrl!.isEmpty)
-              const Text("이미지 없음", style: TextStyle(color: Colors.white54)),
+              Text("이미지 없음", style: TextStyle(color: subText)),
           ],
         ),
       ),

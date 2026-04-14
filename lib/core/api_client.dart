@@ -84,6 +84,39 @@ class ApiClient {
     );
   }
 
+  Future<http.Response> putRaw(
+    String path, {
+    Map<String, String>? headers,
+    Map<String, dynamic>? body,
+  }) {
+    return _client.put(
+      _buildUri(path),
+      headers: {
+        'Content-Type': 'application/json',
+        ...?headers,
+      },
+      body: jsonEncode(body ?? {}),
+    );
+  }
+
+  Future<Map<String, dynamic>> put(
+    String path, {
+    Map<String, String>? headers,
+    Map<String, dynamic>? body,
+  }) async {
+    final response = await putRaw(path, headers: headers, body: body);
+    final decoded = response.body.isNotEmpty
+        ? jsonDecode(response.body) as Map<String, dynamic>
+        : <String, dynamic>{};
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return decoded;
+    }
+    throw ApiException(
+      statusCode: response.statusCode,
+      message: decoded['message']?.toString() ?? 'Unexpected error',
+    );
+  }
+
   void close() => _client.close();
 }
 

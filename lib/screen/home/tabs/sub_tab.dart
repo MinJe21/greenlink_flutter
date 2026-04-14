@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
-
+import 'package:greenlink_front/data/resource_service.dart';
 import 'package:greenlink_front/screen/home/pages/inventory_page.dart';
 import 'package:greenlink_front/screen/home/pages/quest_page.dart';
 import 'package:greenlink_front/screen/home/widgets/common_glass.dart';
-import 'package:greenlink_front/data/resource_service.dart';
 
 class SubTab extends StatefulWidget {
   const SubTab({super.key});
@@ -15,76 +13,110 @@ class SubTab extends StatefulWidget {
 
 class _SubTabState extends State<SubTab> {
   final ResourceService _resourceService = ResourceService();
-  late Future<List<Map<String, dynamic>>> _userQuestsFuture;
+
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
-  List<Map<String, dynamic>> _userQuests = [];
+  Set<String> _attendDates = {};
 
   @override
   void initState() {
     super.initState();
-    _userQuestsFuture = _loadUserQuests();
+    _refreshAttendMonth();
   }
 
-  Future<List<Map<String, dynamic>>> _loadUserQuests() async {
-    final data = await _resourceService.fetchUserQuests();
-    _userQuests = data;
-    return data;
+  Future<void> _refreshAttendMonth() async {
+    try {
+      final result = await _resourceService.fetchAttendMonth(
+        year: _focusedMonth.year,
+        month: _focusedMonth.month,
+      );
+      if (!mounted) return;
+      setState(() {
+        _attendDates = result.dates.toSet();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _attendDates = {};
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _userQuestsFuture,
-      builder: (context, snapshot) {
-        return SingleChildScrollView(
-          key: const ValueKey('sub_tab'),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              const Text("부 페이지", style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: glassButton(
-                  text: "내 식물 등록",
-                  onTap: () => _showCreatePlantModal(context, _resourceService),
-                ),
-              ),
-              const SizedBox(height: 12),
-              glassCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mainText = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final subText = isDark ? Colors.white70 : Colors.black54;
+    return SingleChildScrollView(
+      key: const ValueKey('sub_tab'),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          Text("부 페이지", style: TextStyle(color: subText, fontSize: 18, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: glassButton(
+              text: "내 식물 등록",
+              onTap: () => _showCreatePlantModal(context, _resourceService),
+            ),
+          ),
+          const SizedBox(height: 12),
+          glassCard(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      const Text("닉네임?", style: TextStyle(color: Colors.white70, fontSize: 16)),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: _pillButton("퀘스트 보기", const Color(0xFFDDF8A5), () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const QuestPage()));
-                        }),
-                      ),
-                      const SizedBox(height: 18),
-                      _buildCalendar(snapshot),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: glassButton(
-                          text: "인벤토리",
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryPage())),
-                        ),
+                      Text("출석 캘린더", style: TextStyle(color: subText, fontSize: 16)),
+                      const Spacer(),
+                      Text(
+                        "출석 ${_attendDates.length}일",
+                        style: TextStyle(color: subText, fontSize: 12),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFB6E3FF).withOpacity(0.22),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: isDark ? Colors.white24 : Colors.black26),
+                    ),
+                    child: Text(
+                      "오늘 첫 진입 시 자동 출석 처리됩니다.",
+                      style: TextStyle(color: mainText, fontWeight: FontWeight.w600),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _pillButton("퀘스트 보기", const Color(0xFFDDF8A5), () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const QuestPage()));
+                    }),
+                  ),
+                  const SizedBox(height: 18),
+                  _buildCalendar(),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: glassButton(
+                      text: "인벤토리",
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryPage())),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -100,13 +132,15 @@ class _SubTabState extends State<SubTab> {
             BoxShadow(color: color.withOpacity(0.5), blurRadius: 16, spreadRadius: -2),
           ],
         ),
-        child: Text(text, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w700)),
+        child: Text(text, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
       ),
     );
   }
 
-  // -------- 캘린더 (유저 퀘스트 표시) --------
-  Widget _buildCalendar(AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
+  Widget _buildCalendar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mainText = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final subText = isDark ? Colors.white70 : Colors.black54;
     final days = _buildMonthDays(_focusedMonth);
     return glassCard(
       child: Padding(
@@ -117,25 +151,39 @@ class _SubTabState extends State<SubTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left, color: Colors.white70),
-                  onPressed: () => setState(() {
-                    _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
-                  }),
+                  icon: Icon(Icons.chevron_left, color: subText),
+                  onPressed: () async {
+                    setState(() {
+                      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
+                    });
+                    await _refreshAttendMonth();
+                  },
                 ),
-                Text("${_focusedMonth.year}년 ${_focusedMonth.month}월",
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                Text(
+                  "${_focusedMonth.year}년 ${_focusedMonth.month}월",
+                  style: TextStyle(color: mainText, fontWeight: FontWeight.w700),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right, color: Colors.white70),
-                  onPressed: () => setState(() {
-                    _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 1);
-                  }),
+                  icon: Icon(Icons.chevron_right, color: subText),
+                  onPressed: () async {
+                    setState(() {
+                      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 1);
+                    });
+                    await _refreshAttendMonth();
+                  },
                 ),
               ],
             ),
             const SizedBox(height: 6),
             Row(
               children: const [
-                _Dow("일"), _Dow("월"), _Dow("화"), _Dow("수"), _Dow("목"), _Dow("금"), _Dow("토"),
+                _Dow("일"),
+                _Dow("월"),
+                _Dow("화"),
+                _Dow("수"),
+                _Dow("목"),
+                _Dow("금"),
+                _Dow("토"),
               ],
             ),
             const SizedBox(height: 6),
@@ -152,64 +200,50 @@ class _SubTabState extends State<SubTab> {
               itemBuilder: (_, index) {
                 final day = days[index];
                 if (day == null) return const SizedBox();
-                final markers = _markersFor(day);
-                final now = DateTime.now();
-                final isToday = _isSameDate(day, now);
-                return GestureDetector(
-                  onTap: markers.isEmpty ? null : () => _showQuestsForDate(day, markers),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: markers.isNotEmpty
-                          ? Colors.white.withOpacity(0.07)
-                          : isToday
-                              ? Colors.white.withOpacity(0.08)
-                              : Colors.white.withOpacity(0.02),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: isToday ? Colors.amberAccent.withOpacity(0.6) : Colors.white10),
+
+                final dateKey = _ymd(day);
+                final isAttended = _attendDates.contains(dateKey);
+                final isToday = _isSameDate(day, DateTime.now());
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isAttended
+                        ? const Color(0xFFFFC7E2).withOpacity(0.22)
+                        : (isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03)),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isToday ? const Color(0xFFFF6FAE) : (isDark ? Colors.white10 : Colors.black12),
+                      width: isToday ? 1.8 : 1,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text("${day.day}",
-                            style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600)),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "${day.day}",
+                        style: TextStyle(
+                          color: isDark ? Colors.white.withOpacity(0.9) : const Color(0xFF1A1A1A),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (isAttended)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Wrap(
-                            spacing: 2,
-                            runSpacing: 2,
-                            alignment: WrapAlignment.center,
-                            children: markers.isNotEmpty
-                                ? markers
-                                    .take(3)
-                                    .map((m) => Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration:
-                                              BoxDecoration(color: _colorForType(m.type), shape: BoxShape.circle),
-                                        ))
-                                    .toList()
-                                : isToday
-                                    ? [
-                                        Container(
-                                          width: 10,
-                                          height: 2,
-                                          color: Colors.amberAccent,
-                                        )
-                                      ]
-                                    : [],
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFF6FAE),
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 );
               },
             ),
-            const SizedBox(height: 6),
-            _legend(),
           ],
         ),
       ),
@@ -229,99 +263,22 @@ class _SubTabState extends State<SubTab> {
     });
   }
 
-  List<_QuestMarker> _markersFor(DateTime day) {
-    return _userQuests
-        .map((q) => _parseQuestMarker(q))
-        .where((m) => m != null && _isSameDate(m!.date, day))
-        .cast<_QuestMarker>()
-        .toList();
-  }
-
-  _QuestMarker? _parseQuestMarker(Map<String, dynamic> q) {
-    final type = (q['type'] ?? q['questType'] ?? '').toString().toLowerCase();
-    final dateStr = q['date'] ?? q['dueDate'] ?? q['targetDate'] ?? q['createdAt'];
-    if (dateStr == null) return null;
-    final dt = DateTime.tryParse(dateStr.toString());
-    if (dt == null) return null;
-    return _QuestMarker(date: dt, type: type);
-  }
-
   bool _isSameDate(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
-  void _showQuestsForDate(DateTime date, List<_QuestMarker> markers) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.black.withOpacity(0.9),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("${date.month}월 ${date.day}일 퀘스트",
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
-            const SizedBox(height: 12),
-            ...markers.map((m) => ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.flag, color: _colorForType(m.type)),
-                  title: Text(
-                    (m.type.isEmpty ? "퀘스트" : m.type),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                )),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _legend() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _dotLabel("Daily", _colorForType("daily")),
-        const SizedBox(width: 10),
-        _dotLabel("Weekly", _colorForType("weekly")),
-        const SizedBox(width: 10),
-        _dotLabel("Achievement", _colorForType("achievement")),
-      ],
-    );
-  }
-
-  Widget _dotLabel(String text, Color color) {
-    return Row(
-      children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(text, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-      ],
-    );
-  }
-
-  Color _colorForType(String type) {
-    switch (type.toLowerCase()) {
-      case 'daily':
-        return Colors.lightBlueAccent;
-      case 'weekly':
-        return Colors.greenAccent;
-      case 'achievement':
-        return Colors.amberAccent;
-      default:
-        return Colors.white54;
-    }
+  String _ymd(DateTime d) {
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return "${d.year}-$m-$day";
   }
 
   void _showCreatePlantModal(BuildContext context, ResourceService service) {
     final nicknameCtrl = TextEditingController();
     final plantIdCtrl = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black.withOpacity(0.9),
+      backgroundColor: isDark ? Colors.black.withOpacity(0.9) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
@@ -337,18 +294,25 @@ class _SubTabState extends State<SubTab> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("내 식물 등록", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(
+                "내 식물 등록",
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 14),
-              _textField("식물 닉네임", nicknameCtrl),
+              _textField("식물 닉네임", nicknameCtrl, isDark: isDark),
               const SizedBox(height: 10),
-              _textField("Plant ID", plantIdCtrl, keyboardType: TextInputType.number),
+              _textField("Plant ID", plantIdCtrl, keyboardType: TextInputType.number, isDark: isDark),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                    foregroundColor: isDark ? Colors.black : Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () async {
@@ -383,16 +347,21 @@ class _SubTabState extends State<SubTab> {
     );
   }
 
-  Widget _textField(String hint, TextEditingController controller, {TextInputType? keyboardType}) {
+  Widget _textField(
+    String hint,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+    bool isDark = true,
+  }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1A1A1A)),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white54),
+        hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black45),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -405,18 +374,21 @@ class _SubTabState extends State<SubTab> {
 class _Dow extends StatelessWidget {
   const _Dow(this.text);
   final String text;
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Center(
-        child: Text(text, style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isDark ? Colors.white54 : Colors.black45,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
-}
-
-class _QuestMarker {
-  _QuestMarker({required this.date, required this.type});
-  final DateTime date;
-  final String type;
 }

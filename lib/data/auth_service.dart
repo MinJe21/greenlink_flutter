@@ -106,4 +106,42 @@ class AuthService {
     );
     return json['nickname']?.toString();
   }
+
+  Future<Map<String, dynamic>> fetchMyProfile() async {
+    final token = AuthSession.accessToken;
+    if (token == null) {
+      throw ApiException(statusCode: 401, message: '로그인 토큰이 없습니다.');
+    }
+    return _client.get(
+      '/api/user',
+      headers: {
+        'Authorization': token,
+      },
+    );
+  }
+
+  Future<void> updateMyProfile({
+    required String nickname,
+    String? phoneNumber,
+    String? address,
+  }) async {
+    final token = AuthSession.accessToken;
+    if (token == null) {
+      throw ApiException(statusCode: 401, message: '로그인 토큰이 없습니다.');
+    }
+    final res = await _client.putRaw(
+      '/api/user',
+      headers: {
+        'Authorization': token,
+      },
+      body: {
+        'nickname': nickname.trim(),
+        'phoneNumber': (phoneNumber ?? '').trim(),
+        'address': (address ?? '').trim(),
+      },
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw ApiException(statusCode: res.statusCode, message: '프로필 수정 실패');
+    }
+  }
 }

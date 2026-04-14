@@ -33,13 +33,16 @@ class _InventoryPageState extends State<InventoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mainText = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final subText = isDark ? Colors.white70 : Colors.black54;
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF3F5F7),
       appBar: AppBar(
-        title: const Text("인벤토리", style: TextStyle(color: Colors.white70)),
+        title: Text("인벤토리", style: TextStyle(color: subText)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white70),
+        iconTheme: IconThemeData(color: subText),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -64,7 +67,7 @@ class _InventoryPageState extends State<InventoryPage> {
                 }
                 final data = snapshot.data ?? [];
                 if (data.isEmpty) {
-                  return const Text("표시할 아이템이 없습니다.", style: TextStyle(color: Colors.white70));
+                  return Text("표시할 아이템이 없습니다.", style: TextStyle(color: subText));
                 }
                 return GridView.builder(
                   shrinkWrap: true,
@@ -89,8 +92,8 @@ class _InventoryPageState extends State<InventoryPage> {
                           children: [
                             const Icon(Icons.inventory_2, color: Colors.lightGreenAccent, size: 28),
                             const SizedBox(height: 8),
-                            Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                            if (desc != null) Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                            Text(name, style: TextStyle(color: mainText, fontWeight: FontWeight.w700)),
+                            if (desc != null) Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: subText, fontSize: 12)),
                           ],
                         ),
                       ),
@@ -106,18 +109,28 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   Widget _pill(String text, bool active, VoidCallback onTap) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: active ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.04),
+          color: active
+              ? (isDark ? Colors.white.withOpacity(0.15) : Colors.black.withOpacity(0.10))
+              : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white24),
+          border: Border.all(color: isDark ? Colors.white24 : Colors.black26),
         ),
         child: Center(
-          child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
         ),
       ),
     );

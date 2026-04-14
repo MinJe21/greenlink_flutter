@@ -59,6 +59,40 @@ class ResourceService {
     return _decodeList(res.body);
   }
 
+  // --- Attend
+  Future<AttendTodayResult> checkAttendToday() async {
+    final res = await _client.postRaw(
+      '/api/attend/today',
+      headers: _authHeader(),
+      body: {},
+    );
+    _ensureOk(res);
+    final data = _decodeMap(res.body);
+    return AttendTodayResult(
+      attendDate: data['attendDate']?.toString(),
+      streakAfter: (data['streakAfter'] as num?)?.toInt(),
+    );
+  }
+
+  Future<AttendMonthResult> fetchAttendMonth({
+    required int year,
+    required int month,
+  }) async {
+    final res = await _client.getRaw(
+      '/api/attend?year=$year&month=$month',
+      headers: _authHeader(),
+    );
+    _ensureOk(res);
+    final data = _decodeMap(res.body);
+    final rawDates = data['dates'];
+    if (rawDates is! List) {
+      return const AttendMonthResult(dates: []);
+    }
+    return AttendMonthResult(
+      dates: rawDates.map((e) => e.toString()).toList(),
+    );
+  }
+
   // helpers
   void _ensureOk(http.Response res) {
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -73,4 +107,21 @@ class ResourceService {
     }
     return <Map<String, dynamic>>[];
   }
+
+  Map<String, dynamic> _decodeMap(String body) {
+    final data = jsonDecode(body);
+    if (data is Map<String, dynamic>) return data;
+    return <String, dynamic>{};
+  }
+}
+
+class AttendTodayResult {
+  const AttendTodayResult({this.attendDate, this.streakAfter});
+  final String? attendDate;
+  final int? streakAfter;
+}
+
+class AttendMonthResult {
+  const AttendMonthResult({required this.dates});
+  final List<String> dates;
 }

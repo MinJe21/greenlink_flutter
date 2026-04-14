@@ -21,13 +21,16 @@ class _EncyclopediaTabState extends State<EncyclopediaTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mainText = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final subText = isDark ? Colors.white70 : Colors.black54;
     return SingleChildScrollView(
       key: const ValueKey('encyclopedia_tab'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("식물도감 페이지", style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w600)),
+          Text("식물도감 페이지", style: TextStyle(color: subText, fontSize: 18, fontWeight: FontWeight.w600)),
           const SizedBox(height: 14),
           FutureBuilder<List<PlantSummary>>(
             future: _future,
@@ -43,9 +46,9 @@ class _EncyclopediaTabState extends State<EncyclopediaTab> {
               }
               final plants = snapshot.data ?? [];
               if (plants.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text("식물 데이터가 없습니다.", style: TextStyle(color: Colors.white70)),
+                return Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text("식물 데이터가 없습니다.", style: TextStyle(color: subText)),
                 );
               }
               return GridView.builder(
@@ -81,9 +84,9 @@ class _EncyclopediaTabState extends State<EncyclopediaTab> {
                           else
                             const Icon(Icons.local_florist, color: Colors.lightGreenAccent, size: 32),
                           const SizedBox(height: 8),
-                          Text(plant.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                          Text(plant.name, style: TextStyle(color: mainText, fontWeight: FontWeight.w700)),
                           if (plant.category != null)
-                            Text(plant.category!, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                            Text(plant.category!, style: TextStyle(color: subText, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -101,9 +104,12 @@ class _EncyclopediaTabState extends State<EncyclopediaTab> {
     try {
       final detail = await _service.detail(plantId);
       if (!mounted) return;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final mainText = isDark ? Colors.white : const Color(0xFF1A1A1A);
+      final subText = isDark ? Colors.white70 : Colors.black54;
       showModalBottomSheet(
         context: context,
-        backgroundColor: Colors.black.withOpacity(0.9),
+        backgroundColor: isDark ? Colors.black.withOpacity(0.9) : Colors.white,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
         ),
@@ -116,9 +122,9 @@ class _EncyclopediaTabState extends State<EncyclopediaTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(detail.name, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+                    Text(detail.name, style: TextStyle(color: mainText, fontSize: 20, fontWeight: FontWeight.w800)),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white70),
+                      icon: Icon(Icons.close, color: subText),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -137,14 +143,14 @@ class _EncyclopediaTabState extends State<EncyclopediaTab> {
                   ),
                 const SizedBox(height: 12),
                 if (detail.description != null)
-                  Text(detail.description!, style: const TextStyle(color: Colors.white70)),
+                  Text(detail.description!, style: TextStyle(color: subText)),
                 const SizedBox(height: 12),
-                _kv("카테고리", detail.category),
-                _kv("난이도", detail.difficulty),
-                _kv("성장기간(일)", detail.growthPeriodDays?.toString()),
-                _kv("광량 선호", detail.lightPref),
-                _kv("일일 물주기(ml)", detail.waterPreMlPerDay?.toString()),
-                _kv("해금 조건", detail.unlockCondition),
+                _kv(context, "카테고리", detail.category),
+                _kv(context, "난이도", detail.difficulty),
+                _kv(context, "성장기간(일)", detail.growthPeriodDays?.toString()),
+                _kv(context, "광량 선호", detail.lightPref),
+                _kv(context, "일일 물주기(ml)", detail.waterPreMlPerDay?.toString()),
+                _kv(context, "해금 조건", detail.unlockCondition),
               ],
             ),
           ),
@@ -156,14 +162,17 @@ class _EncyclopediaTabState extends State<EncyclopediaTab> {
     }
   }
 
-  Widget _kv(String label, String? value) {
+  Widget _kv(BuildContext context, String label, String? value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mainText = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final subText = isDark ? Colors.white70 : Colors.black54;
     if (value == null || value.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Row(
         children: [
-          Text("$label: ", style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-          Flexible(child: Text(value, style: const TextStyle(color: Colors.white))),
+          Text("$label: ", style: TextStyle(color: subText, fontWeight: FontWeight.w600)),
+          Flexible(child: Text(value, style: TextStyle(color: mainText))),
         ],
       ),
     );
